@@ -1,4 +1,4 @@
-package SimpleCache
+package cache
 
 import (
 	"fmt"

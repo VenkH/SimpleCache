@@ -1,8 +1,7 @@
-package SimpleCache
+package cache
 
 import (
 	"SimpleCache/byteview"
-	"SimpleCache/cache"
 	"fmt"
 	"log"
 	"sync"
@@ -20,7 +19,7 @@ type GetterFunc func(key string) ([]byte, error)
 type Group struct {
 	name      string
 	getter    Getter
-	mainCache cache.Cache
+	mainCache Cache
 }
 
 var (
@@ -44,7 +43,7 @@ func NewGroup(name string, cacheBytes int64, getter Getter) *Group {
 	g := &Group{
 		name:      name,
 		getter:    getter,
-		mainCache: cache.Cache{CacheBytes: cacheBytes},
+		mainCache: Cache{CacheBytes: cacheBytes},
 	}
 	groups[name] = g
 	return g
