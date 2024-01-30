@@ -1,7 +1,7 @@
 package httpclient
 
 import (
-	peer "SimpleCache/client"
+	"SimpleCache/common/peer"
 	"fmt"
 	"io/ioutil"
 	"net/http"

@@ -2,9 +2,9 @@ package httpserver
 
 import (
 	"SimpleCache/cache"
-	peer "SimpleCache/client"
 	httpclient "SimpleCache/client/http"
-	consistenthash "SimpleCache/consistent"
+	"SimpleCache/common/peer"
+	"SimpleCache/server/consistent"
 	"fmt"
 	"log"
 	"net/http"

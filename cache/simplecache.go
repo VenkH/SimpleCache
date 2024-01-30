@@ -1,9 +1,9 @@
 package cache
 
 import (
-	"SimpleCache/byteview"
-	peer "SimpleCache/client"
-	"SimpleCache/singleflight"
+	"SimpleCache/cache/singleflight"
+	"SimpleCache/common/byteview"
+	"SimpleCache/common/peer"
 	"fmt"
 	"log"
 	"sync"

@@ -1,8 +1,8 @@
 package cache
 
 import (
-	"SimpleCache/byteview"
 	"SimpleCache/cache/lru"
+	"SimpleCache/common/byteview"
 	"sync"
 )
 
