@@ -3,6 +3,7 @@ package cache
 import (
 	"SimpleCache/cache/singleflight"
 	"SimpleCache/common/byteview"
+	pb "SimpleCache/common/pb"
 	"SimpleCache/common/peer"
 	"fmt"
 	"log"
@@ -110,11 +111,17 @@ func (g *Group) load(key string) (value byteview.ByteView, err error) {
 }
 
 func (g *Group) getFromPeer(peer peer.PeerGetter, key string) (byteview.ByteView, error) {
-	bytes, err := peer.Get(g.name, key)
+	req := &pb.Request{
+		Group: g.name,
+		Key:   key,
+	}
+	res := &pb.Response{}
+	err := peer.Get(req, res)
 	if err != nil {
 		return byteview.ByteView{}, err
 	}
-	return byteview.ByteView{B: bytes}, nil
+	return byteview.ByteView{B: res.Value}, nil
+
 }
 
 func (g *Group) getLocally(key string) (byteview.ByteView, error) {

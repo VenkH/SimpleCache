@@ -3,9 +3,11 @@ package httpserver
 import (
 	"SimpleCache/cache"
 	httpclient "SimpleCache/client/http"
+	pb "SimpleCache/common/pb"
 	"SimpleCache/common/peer"
 	"SimpleCache/server/consistent"
 	"fmt"
+	"github.com/golang/protobuf/proto"
 	"log"
 	"net/http"
 	"strings"
@@ -70,6 +72,15 @@ func (p *HTTPPool) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/octet-stream")
 	w.Write(view.ByteSlice())
+
+	// Write the value to the response body as a proto message.
+	body, err := proto.Marshal(&pb.Response{Value: view.ByteSlice()})
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	w.Header().Set("Content-Type", "application/octet-stream")
+	w.Write(body)
 }
 
 // Set updates the pool's list of peers.
