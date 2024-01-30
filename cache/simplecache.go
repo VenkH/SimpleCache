@@ -2,6 +2,7 @@ package cache
 
 import (
 	"SimpleCache/byteview"
+	peer "SimpleCache/client"
 	"fmt"
 	"log"
 	"sync"
@@ -20,6 +21,15 @@ type Group struct {
 	name      string
 	getter    Getter
 	mainCache Cache
+	peers     peer.PeerPicker
+}
+
+// RegisterPeers registers a PeerPicker for choosing remote peer
+func (g *Group) RegisterPeers(peers peer.PeerPicker) {
+	if g.peers != nil {
+		panic("RegisterPeerPicker called more than once")
+	}
+	g.peers = peers
 }
 
 var (
@@ -73,7 +83,24 @@ func (g *Group) Get(key string) (byteview.ByteView, error) {
 }
 
 func (g *Group) load(key string) (value byteview.ByteView, err error) {
+	if g.peers != nil {
+		if peer, ok := g.peers.PickPeer(key); ok {
+			if value, err = g.getFromPeer(peer, key); err == nil {
+				return value, nil
+			}
+			log.Println("[GeeCache] Failed to get from peer", err)
+		}
+	}
+
 	return g.getLocally(key)
+}
+
+func (g *Group) getFromPeer(peer peer.PeerGetter, key string) (byteview.ByteView, error) {
+	bytes, err := peer.Get(g.name, key)
+	if err != nil {
+		return byteview.ByteView{}, err
+	}
+	return byteview.ByteView{B: bytes}, nil
 }
 
 func (g *Group) getLocally(key string) (byteview.ByteView, error) {
