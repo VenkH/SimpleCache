@@ -2,14 +2,15 @@ package httpserver
 
 import (
 	"SimpleCache/cache"
-	httpclient "SimpleCache/client/http"
 	pb "SimpleCache/common/pb"
 	"SimpleCache/common/peer"
 	"SimpleCache/server/consistent"
 	"fmt"
 	"github.com/golang/protobuf/proto"
+	"io/ioutil"
 	"log"
 	"net/http"
+	"net/url"
 	"strings"
 	"sync"
 )
@@ -26,7 +27,7 @@ type HTTPPool struct {
 	basePath    string
 	mu          sync.Mutex // guards peers and httpGetters
 	peers       *consistenthash.Map
-	httpGetters map[string]*httpclient.HttpGetter // keyed by e.g. "http://10.0.0.2:8008"
+	httpGetters map[string]*HttpGetter // keyed by e.g. "http://10.0.0.2:8008"
 }
 
 // NewHTTPPool initializes an HTTP pool of peers.
@@ -89,9 +90,9 @@ func (p *HTTPPool) Set(peers ...string) {
 	defer p.mu.Unlock()
 	p.peers = consistenthash.New(defaultReplicas, nil)
 	p.peers.Add(peers...)
-	p.httpGetters = make(map[string]*httpclient.HttpGetter, len(peers))
+	p.httpGetters = make(map[string]*HttpGetter, len(peers))
 	for _, peer := range peers {
-		p.httpGetters[peer] = &httpclient.HttpGetter{BaseURL: peer + p.basePath}
+		p.httpGetters[peer] = &HttpGetter{BaseURL: peer + p.basePath}
 	}
 }
 
@@ -107,3 +108,38 @@ func (p *HTTPPool) PickPeer(key string) (peer.PeerGetter, bool) {
 }
 
 var _ peer.PeerPicker = (*HTTPPool)(nil)
+
+type HttpGetter struct {
+	BaseURL string
+}
+
+func (h *HttpGetter) Get(in *pb.Request, out *pb.Response) error {
+	u := fmt.Sprintf(
+		"%v%v/%v",
+		h.BaseURL,
+		url.QueryEscape(in.GetGroup()),
+		url.QueryEscape(in.GetKey()),
+	)
+	res, err := http.Get(u)
+	if err != nil {
+		return err
+	}
+	defer res.Body.Close()
+
+	if res.StatusCode != http.StatusOK {
+		return fmt.Errorf("server returned: %v", res.Status)
+	}
+
+	bytes, err := ioutil.ReadAll(res.Body)
+	if err != nil {
+		return fmt.Errorf("reading response body: %v", err)
+	}
+
+	if err = proto.Unmarshal(bytes, out); err != nil {
+		return fmt.Errorf("decoding response body: %v", err)
+	}
+
+	return nil
+}
+
+var _ peer.PeerGetter = (*HttpGetter)(nil)
